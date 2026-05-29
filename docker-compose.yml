@@ -1,0 +1,30 @@
+services:
+  bot:
+    build: .
+    container_name: discord_bot
+    restart: unless-stopped
+
+    # ── Environment ──────────────────────────────────────────────────────────
+    env_file:
+      - .env          # create this from .env.example
+    environment:
+      DATABASE_PATH: /data/bot.db                     # DB on the volume
+      TWITTER_SESSION_DIR: /data/twitter_session      # X login cookies on the volume
+      TWITTER_HEADLESS: "true"                         # no screen on a server
+
+    # ── Persistent storage (DB + Twitter session survive restarts) ───────────
+    volumes:
+      - bot_data:/data
+
+    # ── Health check ─────────────────────────────────────────────────────────
+    # Discord bots have no HTTP port, so we check that the process is alive.
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "python main.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  bot_data:
+    driver: local
